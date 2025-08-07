@@ -1,21 +1,36 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { createClient } = require('@supabase/supabase-js');
 const router = express.Router();
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ msg: 'User registered' });
+    const { email, password, username } = req.body;
+    
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    // Create user profile in the users table
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([{ id: authData.user.id, username, email }]);
+
+    if (profileError) throw profileError;
+
+    res.status(201).json({ msg: 'User registered successfully' });
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ msg: err.message });
   }
 });
 
@@ -23,14 +38,30 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    
+    const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+
+    res.json({
+      token: session.access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: profile.username
+      }
+    });
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    res.status(400).json({ msg: err.message });
   }
 });
 

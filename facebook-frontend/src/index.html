@@ -5,9 +5,29 @@
   <title>FacebookFrontend</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-  <app-root></app-root>
+    <div class="main-container">
+    <div class="left-section">
+      <h1 class="fb-logo">facebook</h1>
+      <p class="fb-tagline">Facebook helps you connect and share<br>with the people in your life.</p>
+    </div>
+
+    <div class="right-section">
+      <div class="login-box">
+        <input type="text" placeholder="Email or phone number" class="input-field" />
+        <input type="password" placeholder="Password" class="input-field" />
+        <button class="login-btn">Log In</button>
+        <a href="#" class="forgot-link">Forgotten password?</a>
+        <hr />
+        <button class="create-account-btn">Create new account</button>
+      </div>
+      <p class="create-page-msg">
+        <a href="#" class="create-page-link">Create a Page</a> for a celebrity, brand or business.
+      </p>
+    </div>
+  </div>
 </body>
 </html>

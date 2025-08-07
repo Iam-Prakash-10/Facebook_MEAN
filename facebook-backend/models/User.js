@@ -1,9 +1,32 @@
-const mongoose = require('mongoose');
+const { createClient } = require('@supabase/supabase-js');
+const dotenv = require('dotenv');
 
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
+dotenv.config();
 
-module.exports = mongoose.model('User', UserSchema); 
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+class User {
+  static async findOne(query) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .match(query)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  static async create(userData) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+}
+
+module.exports = User; 
